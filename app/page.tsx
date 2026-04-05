@@ -50,6 +50,13 @@ export default function Dashboard() {
     setSort({ column: null, direction: null })
   }, [activeTab])
 
+  // Automatically switch to Vendors tab if source filter is NetSuite
+  useEffect(() => {
+    if (sourceFilter === 'NetSuite') {
+      setActiveTab('vendors')
+    }
+  }, [sourceFilter])
+
   const loadData = useCallback(async () => {
     setLoading(true)
     try {

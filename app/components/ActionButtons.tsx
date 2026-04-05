@@ -12,6 +12,7 @@ interface ActionButtonsProps {
 export default function ActionButtons({ onLoad, onReset, loading }: ActionButtonsProps) {
   const [syncingZuora, setSyncingZuora] = useState(false)
   const [syncingChargebee, setSyncingChargebee] = useState(false)
+  const [syncingNetSuite, setSyncingNetSuite] = useState(false)
   const [toastMessage, setToastMessage] = useState<{ text: string; error: boolean } | null>(null)
 
   const showToast = (text: string, error = false) => {
@@ -45,7 +46,20 @@ export default function ActionButtons({ onLoad, onReset, loading }: ActionButton
     }
   }
 
-  const isSyncing = syncingZuora || syncingChargebee
+  const handleSyncNetSuite = async () => {
+    setSyncingNetSuite(true)
+    try {
+      const res = await fetch('/api/sync/netsuite', { method: 'POST' })
+      if (!res.ok) throw new Error('Failed')
+      showToast('NetSuite sync triggered. Data will arrive shortly.', false)
+    } catch {
+      showToast('Failed to trigger NetSuite sync', true)
+    } finally {
+      setSyncingNetSuite(false)
+    }
+  }
+
+  const isSyncing = syncingZuora || syncingChargebee || syncingNetSuite
 
   return (
     <div className="flex flex-wrap items-center gap-3 relative">
@@ -90,6 +104,21 @@ export default function ActionButtons({ onLoad, onReset, loading }: ActionButton
           <RefreshCw className="w-4 h-4" />
         )}
         {syncingChargebee ? 'Syncing Chargebee...' : 'Sync Chargebee'}
+      </button>
+
+      {/* Sync NetSuite Button */}
+      <button
+        onClick={handleSyncNetSuite}
+        disabled={isSyncing}
+        className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold text-white
+          bg-[#2563EB] hover:bg-[#1D4ED8] active:scale-[0.98] disabled:opacity-50 transition-all shadow-[0_4px_20px_-4px_rgba(37,99,235,0.4)]"
+      >
+        {syncingNetSuite ? (
+          <Loader2 className="w-4 h-4 animate-spin" />
+        ) : (
+          <RefreshCw className="w-4 h-4" />
+        )}
+        {syncingNetSuite ? 'Syncing NetSuite...' : 'Sync NetSuite'}
       </button>
 
       {/* Load Data Button */}

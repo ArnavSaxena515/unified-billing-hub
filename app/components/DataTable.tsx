@@ -55,6 +55,10 @@ const columnDefs: Record<TabKey, { key: string; label: string; type?: string }[]
     { key: 'Payment Terms', label: 'Payment Terms' },
     { key: 'Status', label: 'Status', type: 'status' },
     { key: 'Currency', label: 'Currency' },
+    { key: 'Contact', label: 'Contact', type: 'truncate' },
+    { key: 'Subsidiary', label: 'Subsidiary', type: 'truncate' },
+    { key: 'Outstanding Balance', label: 'Balance', type: 'balance' },
+    { key: 'Created Date', label: 'Created', type: 'date' },
   ],
 }
 
@@ -76,6 +80,13 @@ function renderCell(
       return (
         <span className="font-mono tabular-nums">
           {formatCurrency(Number(val), row.Currency || 'USD')}
+        </span>
+      )
+    case 'balance':
+      const amount = Number(val) || 0
+      return (
+        <span className={`font-mono tabular-nums ${amount > 0 ? 'text-red-600 font-semibold' : ''}`}>
+          {formatCurrency(amount, row.Currency || 'USD')}
         </span>
       )
     case 'truncate':
