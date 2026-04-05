@@ -9,6 +9,8 @@ export async function POST() {
         'X-API-Key': process.env.REFOLD_API_KEY!,
         'linked_account_id': process.env.REFOLD_LINKED_ACCOUNT_ID!,
         'slug': process.env.REFOLD_WORKFLOW_SLUG!,
+        'config_id': 'OPTIONAL',
+        'sync_execution': 'false',
       },
       body: JSON.stringify({}),
     })
