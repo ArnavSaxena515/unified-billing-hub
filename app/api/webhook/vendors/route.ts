@@ -7,19 +7,22 @@ export async function POST(request: Request) {
   try {
     const body = await request.json()
     const parsedRecords = Array.isArray(body) ? body : [body]
-    const newRecords = parsedRecords.filter((r) => r && typeof r === 'object' && Object.keys(r).length > 0)
+    const validRecords = parsedRecords.filter((r) => r && typeof r === 'object' && Object.keys(r).length > 0)
     
-    if (newRecords.length === 0) {
+    if (validRecords.length === 0) {
       return NextResponse.json({ success: true, received: 0, note: 'Empty payload ignored' })
     }
-    const existing = ((await redis.get(REDIS_KEY)) as unknown[]) || []
-    const updated = [...existing, ...newRecords]
-    await redis.set(REDIS_KEY, updated, { ex: 3600 })
-    return NextResponse.json({
-      success: true,
-      received: newRecords.length,
-      total: updated.length,
-    })
+
+    // RPUSH is atomic — no race condition
+    await Promise.all(
+      validRecords.map(record => 
+        redis.rpush(REDIS_KEY, JSON.stringify(record))
+      )
+    )
+    // Set TTL on the list
+    await redis.expire(REDIS_KEY, 3600)
+
+    return NextResponse.json({ success: true, received: validRecords.length })
   } catch {
     return NextResponse.json(
       { error: 'Failed to store data' },

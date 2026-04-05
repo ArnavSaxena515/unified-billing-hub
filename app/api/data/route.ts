@@ -4,16 +4,20 @@ import { redis } from '@/app/lib/redis'
 export async function GET() {
   try {
     const [customers, contracts, invoices, vendors] = await Promise.all([
-      redis.get('billing:customers'),
-      redis.get('billing:contracts'),
-      redis.get('billing:invoices'),
-      redis.get('billing:vendors'),
+      redis.lrange('billing:customers', 0, -1),
+      redis.lrange('billing:contracts', 0, -1),
+      redis.lrange('billing:invoices', 0, -1),
+      redis.lrange('billing:vendors', 0, -1),
     ])
 
-    const c = (customers as unknown[]) || []
-    const co = (contracts as unknown[]) || []
-    const i = (invoices as unknown[]) || []
-    const v = (vendors as unknown[]) || []
+    // Each item is a JSON string, parse them
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const parse = (list: any[]) => list.map(item => typeof item === 'string' ? JSON.parse(item) : item)
+
+    const c = parse(customers || [])
+    const co = parse(contracts || [])
+    const i = parse(invoices || [])
+    const v = parse(vendors || [])
 
     return NextResponse.json({
       customers: c,
