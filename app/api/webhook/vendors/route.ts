@@ -6,7 +6,12 @@ const REDIS_KEY = 'billing:vendors'
 export async function POST(request: Request) {
   try {
     const body = await request.json()
-    const newRecords = Array.isArray(body) ? body : [body]
+    const parsedRecords = Array.isArray(body) ? body : [body]
+    const newRecords = parsedRecords.filter((r) => r && typeof r === 'object' && Object.keys(r).length > 0)
+    
+    if (newRecords.length === 0) {
+      return NextResponse.json({ success: true, received: 0, note: 'Empty payload ignored' })
+    }
     const existing = ((await redis.get(REDIS_KEY)) as unknown[]) || []
     const updated = [...existing, ...newRecords]
     await redis.set(REDIS_KEY, updated, { ex: 3600 })
