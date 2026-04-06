@@ -6,9 +6,11 @@ export async function POST() {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'X-API-Key': process.env.REFOLD_API_KEY!,
-        'linked_account_id': process.env.REFOLD_LINKED_ACCOUNT_ID!,
-        'slug': process.env.REFOLD_WORKFLOW_SLUG!,
+        'X-API-Key': 'tk42aa441c-7f2a-4f76-a08f-3a1f99fc4df0',
+        'linked_account_id': 'cobalt_test_user',
+        'slug': 'Coba-6128',
+        'config_id': 'OPTIONAL',
+        'sync_execution': 'false',
       },
       body: JSON.stringify({}),
     })
