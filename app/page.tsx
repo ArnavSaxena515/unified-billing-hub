@@ -63,6 +63,27 @@ export default function Dashboard() {
     }
   }, [sourceFilter])
 
+  // Load existing data on mount
+  useEffect(() => {
+    const loadExisting = async () => {
+      try {
+        const res = await fetch('/api/data')
+        const json = await res.json()
+        const total = (json.counts?.customers || 0) + (json.counts?.contracts || 0) + (json.counts?.invoices || 0) + (json.counts?.vendors || 0) + (json.counts?.revrec || 0)
+        if (total > 0) {
+          setCustomers(json.customers || [])
+          setContracts(json.contracts || [])
+          setInvoices(json.invoices || [])
+          setVendors(json.vendors || [])
+          setRevrec(json.revrec || [])
+        }
+      } catch (err) {
+        console.error('Failed to load existing data:', err)
+      }
+    }
+    loadExisting()
+  }, [])
+
   const loadData = useCallback(async () => {
     setLoading(true)
     try {
