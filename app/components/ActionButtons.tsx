@@ -3,12 +3,13 @@ import { RotateCcw, Loader2, RefreshCw, Play } from 'lucide-react'
 
 interface ActionButtonsProps {
   onSyncStart: () => void
+  onStartPolling: () => void
   onRefresh: () => void
   onReset: () => void
   isSyncing: boolean
 }
 
-export default function ActionButtons({ onSyncStart, onRefresh, onReset, isSyncing }: ActionButtonsProps) {
+export default function ActionButtons({ onSyncStart, onStartPolling, onRefresh, onReset, isSyncing }: ActionButtonsProps) {
   const [selectedSource, setSelectedSource] = useState<string>('')
   const [toastMessage, setToastMessage] = useState<{ text: string; error: boolean } | null>(null)
 
@@ -33,6 +34,7 @@ export default function ActionButtons({ onSyncStart, onRefresh, onReset, isSynci
       } else {
         await fetch(`/api/sync/${selectedSource}`, { method: 'POST' })
       }
+      onStartPolling()
     } catch {
       showToast('Failed to trigger sync', true)
     }

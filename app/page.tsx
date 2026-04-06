@@ -63,93 +63,83 @@ export default function Dashboard() {
     }
   }, [sourceFilter])
 
-  // Load existing data on mount
-  useEffect(() => {
-    const loadExisting = async () => {
-      try {
-        const res = await fetch('/api/data')
-        const json = await res.json()
-        const total = (json.counts?.customers || 0) + (json.counts?.contracts || 0) + (json.counts?.invoices || 0) + (json.counts?.vendors || 0) + (json.counts?.revrec || 0)
-        if (total > 0) {
-          setCustomers(json.customers || [])
-          setContracts(json.contracts || [])
-          setInvoices(json.invoices || [])
-          setVendors(json.vendors || [])
-          setRevrec(json.revrec || [])
-        }
-      } catch (err) {
-        console.error('Failed to load existing data:', err)
-      }
-    }
-    loadExisting()
+  const fetchData = useCallback(async () => {
+    const res = await fetch('/api/data')
+    const json = await res.json()
+    setCustomers(json.customers || [])
+    setContracts(json.contracts || [])
+    setInvoices(json.invoices || [])
+    setVendors(json.vendors || [])
+    setRevrec(json.revrec || [])
+    return json
   }, [])
+
+  // Behavior 1: Load existing data on mount (no polling)
+  useEffect(() => {
+    fetchData().catch(err => console.error('Failed to load existing data on mount:', err))
+  }, [fetchData])
 
   const loadData = useCallback(async () => {
     setLoading(true)
     try {
-      const res = await fetch('/api/data')
-      const data: BillingData = await res.json()
-      setCustomers(data.customers || [])
-      setContracts(data.contracts || [])
-      setInvoices(data.invoices || [])
-      setVendors(data.vendors || [])
-      setRevrec(data.revrec || [])
-      return data
+      await fetchData()
     } catch (err) {
       console.error('Failed to load data:', err)
-      return null
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [fetchData])
 
   const handleSyncStart = useCallback(() => {
     setIsSyncing(true)
     setSyncStatus('syncing')
-    
+  }, [])
+
+  // Behavior 2: Start polling after sync
+  const startPolling = useCallback(() => {
     let previousCount = 0
     let stablePolls = 0
-    let elapsedPolls = 0
 
-    const poll = setInterval(async () => {
-      elapsedPolls++
-      if (elapsedPolls >= 30) {
-        clearInterval(poll)
-        setIsSyncing(false)
-        setSyncStatus('timeout')
-        return
-      }
+    const interval = setInterval(async () => {
+      try {
+        const json = await fetchData()
 
-      const res = await fetch('/api/data')
-      const json = await res.json()
-      
-      setCustomers(json.customers || [])
-      setContracts(json.contracts || [])
-      setInvoices(json.invoices || [])
-      setVendors(json.vendors || [])
-      setRevrec(json.revrec || [])
+        const totalCount =
+          (json.counts?.customers || 0) +
+          (json.counts?.contracts || 0) +
+          (json.counts?.invoices || 0) +
+          (json.counts?.vendors || 0) +
+          (json.counts?.revrec || 0)
 
-      const totalCount = 
-        (json.counts?.customers || 0) + 
-        (json.counts?.contracts || 0) + 
-        (json.counts?.invoices || 0) + 
-        (json.counts?.vendors || 0) + 
-        (json.counts?.revrec || 0)
-
-      if (totalCount === previousCount && totalCount > 0) {
-        stablePolls++
-        if (stablePolls >= 2) {
-          clearInterval(poll)
-          setIsSyncing(false)
-          setSyncStatus('complete')
-          setTimeout(() => setSyncStatus('idle'), 3000)
+        if (totalCount === previousCount && totalCount > 0) {
+          stablePolls++
+          if (stablePolls >= 2) {
+            clearInterval(interval)
+            setIsSyncing(false)
+            setSyncStatus('complete')
+            setTimeout(() => setSyncStatus('idle'), 3000)
+          }
+        } else {
+          stablePolls = 0
         }
-      } else {
-        stablePolls = 0
+        previousCount = totalCount
+      } catch (err) {
+        console.error('Error during polling:', err)
       }
-      previousCount = totalCount
     }, 3000)
-  }, [])
+
+    // Safety timeout — stop after 90 seconds
+    setTimeout(() => {
+      clearInterval(interval)
+      setIsSyncing((prev) => {
+        if (prev) {
+          setSyncStatus('timeout')
+          return false
+        }
+        return prev
+      })
+    }, 90000)
+  }, [fetchData])
 
   const handleReset = useCallback(async () => {
     try {
@@ -281,6 +271,7 @@ export default function Dashboard() {
           </div>
           <ActionButtons
             onSyncStart={handleSyncStart}
+            onStartPolling={startPolling}
             onRefresh={loadData}
             onReset={() => setShowResetModal(true)}
             isSyncing={isSyncing}
