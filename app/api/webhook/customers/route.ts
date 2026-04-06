@@ -13,12 +13,13 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: true, received: 0, note: 'Empty payload ignored' })
     }
 
-    // RPUSH is atomic — no race condition
-    await Promise.all(
-      validRecords.map(record => 
-        redis.rpush(REDIS_KEY, JSON.stringify(record))
-      )
-    )
+    const hashData: Record<string, string> = {}
+    validRecords.forEach((record: any) => {
+      const key = `${record["Source"] || "unknown"}:${record["Source ID"] || record["source_id"] || ""}`
+      hashData[key] = JSON.stringify(record)
+    })
+
+    await redis.hset(REDIS_KEY, hashData)
     // Set TTL on the list
     await redis.expire(REDIS_KEY, 3600)
 

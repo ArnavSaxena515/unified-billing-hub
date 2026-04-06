@@ -1,19 +1,15 @@
-'use client'
-
 import { useState } from 'react'
-import { Download, RotateCcw, Loader2, RefreshCw } from 'lucide-react'
+import { RotateCcw, Loader2, RefreshCw, Play } from 'lucide-react'
 
 interface ActionButtonsProps {
-  onLoad: () => void
+  onSyncStart: () => void
+  onRefresh: () => void
   onReset: () => void
-  loading: boolean
+  isSyncing: boolean
 }
 
-export default function ActionButtons({ onLoad, onReset, loading }: ActionButtonsProps) {
-  const [syncingZuora, setSyncingZuora] = useState(false)
-  const [syncingChargebee, setSyncingChargebee] = useState(false)
-  const [syncingNetSuite, setSyncingNetSuite] = useState(false)
-  const [syncingStripe, setSyncingStripe] = useState(false)
+export default function ActionButtons({ onSyncStart, onRefresh, onReset, isSyncing }: ActionButtonsProps) {
+  const [selectedSource, setSelectedSource] = useState<string>('')
   const [toastMessage, setToastMessage] = useState<{ text: string; error: boolean } | null>(null)
 
   const showToast = (text: string, error = false) => {
@@ -21,59 +17,26 @@ export default function ActionButtons({ onLoad, onReset, loading }: ActionButton
     setTimeout(() => setToastMessage(null), 4000)
   }
 
-  const handleSyncZuora = async () => {
-    setSyncingZuora(true)
+  const handleSync = async () => {
+    if (!selectedSource) return
+    onSyncStart()
+    
     try {
-      const res = await fetch('/api/sync/zuora', { method: 'POST' })
-      if (!res.ok) throw new Error('Failed')
-      showToast('Zuora sync triggered. Data will arrive shortly.', false)
+      if (selectedSource === 'all') {
+        showToast('Syncing all sources...', false)
+        await Promise.all([
+          fetch('/api/sync/zuora', { method: 'POST' }),
+          fetch('/api/sync/chargebee', { method: 'POST' }),
+          fetch('/api/sync/netsuite', { method: 'POST' }),
+          fetch('/api/sync/stripe', { method: 'POST' })
+        ])
+      } else {
+        await fetch(`/api/sync/${selectedSource}`, { method: 'POST' })
+      }
     } catch {
-      showToast('Failed to trigger Zuora sync', true)
-    } finally {
-      setSyncingZuora(false)
+      showToast('Failed to trigger sync', true)
     }
   }
-
-  const handleSyncChargebee = async () => {
-    setSyncingChargebee(true)
-    try {
-      const res = await fetch('/api/sync/chargebee', { method: 'POST' })
-      if (!res.ok) throw new Error('Failed')
-      showToast('Chargebee sync triggered. Data will arrive shortly.', false)
-    } catch {
-      showToast('Failed to trigger Chargebee sync', true)
-    } finally {
-      setSyncingChargebee(false)
-    }
-  }
-
-  const handleSyncNetSuite = async () => {
-    setSyncingNetSuite(true)
-    try {
-      const res = await fetch('/api/sync/netsuite', { method: 'POST' })
-      if (!res.ok) throw new Error('Failed')
-      showToast('NetSuite sync triggered. Data will arrive shortly.', false)
-    } catch {
-      showToast('Failed to trigger NetSuite sync', true)
-    } finally {
-      setSyncingNetSuite(false)
-    }
-  }
-
-  const handleSyncStripe = async () => {
-    setSyncingStripe(true)
-    try {
-      const res = await fetch('/api/sync/stripe', { method: 'POST' })
-      if (!res.ok) throw new Error('Failed')
-      showToast('Stripe sync triggered. Data will arrive shortly.', false)
-    } catch {
-      showToast('Failed to trigger Stripe sync', true)
-    } finally {
-      setSyncingStripe(false)
-    }
-  }
-
-  const isSyncing = syncingZuora || syncingChargebee || syncingNetSuite || syncingStripe
 
   return (
     <div className="flex flex-wrap items-center gap-3 relative">
@@ -90,93 +53,46 @@ export default function ActionButtons({ onLoad, onReset, loading }: ActionButton
         </div>
       )}
 
-      {/* Sync Zuora Button */}
-      <button
-        onClick={handleSyncZuora}
+      <span className="text-[14px] font-medium text-[#6B7280]">Sync from</span>
+      
+      <select
+        value={selectedSource}
+        onChange={(e) => setSelectedSource(e.target.value)}
         disabled={isSyncing}
-        className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold text-white
-          bg-[#059669] hover:bg-[#047857] active:scale-[0.98] disabled:opacity-50 transition-all shadow-[0_4px_20px_-4px_rgba(5,150,105,0.4)]"
+        className="appearance-none border border-[#E5E7EB] rounded-lg px-4 py-2 text-sm text-[#111827] bg-white hover:border-[#7C3AED] min-w-[160px] focus:outline-none focus:ring-2 focus:ring-[#7C3AED]/20 transition-colors"
       >
-        {syncingZuora ? (
-          <Loader2 className="w-4 h-4 animate-spin" />
-        ) : (
-          <RefreshCw className="w-4 h-4" />
-        )}
-        {syncingZuora ? 'Syncing Zuora...' : 'Sync Zuora'}
+        <option value="" disabled>Select source ▾</option>
+        <option value="zuora">🟢 Zuora</option>
+        <option value="chargebee">🟠 Chargebee</option>
+        <option value="netsuite">🔵 NetSuite</option>
+        <option value="stripe">🟣 Stripe</option>
+        <option value="all">⚪ All Sources</option>
+      </select>
+
+      <button
+        onClick={handleSync}
+        disabled={!selectedSource || isSyncing}
+        className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm bg-[#7C3AED] text-white hover:bg-[#6D28D9] active:scale-[0.98] disabled:opacity-50 transition-all font-medium"
+      >
+        <Play className="w-4 h-4 fill-current" />
+        Sync
       </button>
 
-      {/* Sync Chargebee Button */}
       <button
-        onClick={handleSyncChargebee}
+        onClick={onRefresh}
         disabled={isSyncing}
-        className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold text-white
-          bg-[#EA580C] hover:bg-[#C2410C] active:scale-[0.98] disabled:opacity-50 transition-all shadow-[0_4px_20px_-4px_rgba(234,88,12,0.4)]"
+        className="p-2 border border-transparent rounded-lg text-gray-500 hover:bg-gray-100 active:scale-[0.98] transition-all disabled:opacity-50"
+        title="Refresh Data"
       >
-        {syncingChargebee ? (
-          <Loader2 className="w-4 h-4 animate-spin" />
-        ) : (
-          <RefreshCw className="w-4 h-4" />
-        )}
-        {syncingChargebee ? 'Syncing Chargebee...' : 'Sync Chargebee'}
+        <RefreshCw className="w-4 h-4" />
       </button>
 
-      {/* Sync NetSuite Button */}
-      <button
-        onClick={handleSyncNetSuite}
-        disabled={isSyncing}
-        className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold text-white
-          bg-[#2563EB] hover:bg-[#1D4ED8] active:scale-[0.98] disabled:opacity-50 transition-all shadow-[0_4px_20px_-4px_rgba(37,99,235,0.4)]"
-      >
-        {syncingNetSuite ? (
-          <Loader2 className="w-4 h-4 animate-spin" />
-        ) : (
-          <RefreshCw className="w-4 h-4" />
-        )}
-        {syncingNetSuite ? 'Syncing NetSuite...' : 'Sync NetSuite'}
-      </button>
-
-      {/* Sync Stripe Button */}
-      <button
-        onClick={handleSyncStripe}
-        disabled={isSyncing}
-        className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold text-white
-          bg-[#7C3AED] hover:bg-[#6D28D9] active:scale-[0.98] disabled:opacity-50 transition-all shadow-[0_4px_20px_-4px_rgba(124,58,237,0.4)]"
-      >
-        {syncingStripe ? (
-          <Loader2 className="w-4 h-4 animate-spin" />
-        ) : (
-          <RefreshCw className="w-4 h-4" />
-        )}
-        {syncingStripe ? 'Syncing Stripe...' : 'Sync Stripe'}
-      </button>
-
-      {/* Load Data Button */}
-      <button
-        onClick={onLoad}
-        disabled={loading}
-        className="flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold text-on-primary
-          bg-gradient-to-br from-primary-dark to-primary
-          hover:opacity-90 active:scale-[0.98] disabled:opacity-50
-          shadow-[0_4px_20px_-4px_rgba(124,58,237,0.4)]
-          transition-all"
-      >
-        {loading ? (
-          <Loader2 className="w-4 h-4 animate-spin" />
-        ) : (
-          <Download className="w-4 h-4" />
-        )}
-        {loading ? 'Loading…' : 'Load Data'}
-      </button>
-
-      {/* Reset Button */}
       <button
         onClick={onReset}
         disabled={isSyncing}
-        className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium
-          text-on-surface-variant bg-transparent
-          hover:bg-surface-container-high active:scale-[0.98] disabled:opacity-50
-          border border-outline-variant/20
-          transition-all"
+        className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium
+          text-gray-700 bg-white hover:bg-gray-50 active:scale-[0.98] disabled:opacity-50
+          border border-gray-200 transition-all"
       >
         <RotateCcw className="w-4 h-4" />
         Reset

@@ -4,11 +4,11 @@ import { redis } from '@/app/lib/redis'
 export async function GET() {
   try {
     const [customers, contracts, invoices, vendors, revrec] = await Promise.all([
-      redis.lrange('billing:customers', 0, -1),
-      redis.lrange('billing:contracts', 0, -1),
-      redis.lrange('billing:invoices', 0, -1),
-      redis.lrange('billing:vendors', 0, -1),
-      redis.lrange('billing:revrec', 0, -1),
+      redis.hvals('billing:customers'),
+      redis.hvals('billing:contracts'),
+      redis.hvals('billing:invoices'),
+      redis.hvals('billing:vendors'),
+      redis.hvals('billing:revrec'),
     ])
 
     // Each item is a JSON string, parse them

@@ -14,6 +14,7 @@ import LoadingState from './components/LoadingState'
 import ResetModal from './components/ResetModal'
 import Footer from './components/Footer'
 import RevRecSummary from './components/RevRecSummary'
+import { Loader2, CheckCircle2, AlertCircle } from 'lucide-react'
 import type {
   Customer,
   Contract,
@@ -33,6 +34,8 @@ export default function Dashboard() {
   const [vendors, setVendors] = useState<Vendor[]>([])
   const [revrec, setRevrec] = useState<RevRec[]>([])
   const [loading, setLoading] = useState(false)
+  const [isSyncing, setIsSyncing] = useState(false)
+  const [syncStatus, setSyncStatus] = useState<'idle' | 'syncing' | 'complete' | 'timeout'>('idle')
   const [activeTab, setActiveTab] = useState<TabKey>('customers')
   const [sourceFilter, setSourceFilter] = useState<SourceFilterType>('All')
   const [statusFilter, setStatusFilter] = useState('All')
@@ -70,11 +73,61 @@ export default function Dashboard() {
       setInvoices(data.invoices || [])
       setVendors(data.vendors || [])
       setRevrec(data.revrec || [])
+      return data
     } catch (err) {
       console.error('Failed to load data:', err)
+      return null
     } finally {
       setLoading(false)
     }
+  }, [])
+
+  const handleSyncStart = useCallback(() => {
+    setIsSyncing(true)
+    setSyncStatus('syncing')
+    
+    let previousCount = 0
+    let stablePolls = 0
+    let elapsedPolls = 0
+
+    const poll = setInterval(async () => {
+      elapsedPolls++
+      if (elapsedPolls >= 30) {
+        clearInterval(poll)
+        setIsSyncing(false)
+        setSyncStatus('timeout')
+        return
+      }
+
+      const res = await fetch('/api/data')
+      const json = await res.json()
+      
+      setCustomers(json.customers || [])
+      setContracts(json.contracts || [])
+      setInvoices(json.invoices || [])
+      setVendors(json.vendors || [])
+      setRevrec(json.revrec || [])
+
+      const totalCount = 
+        (json.counts?.customers || 0) + 
+        (json.counts?.contracts || 0) + 
+        (json.counts?.invoices || 0) + 
+        (json.counts?.vendors || 0) + 
+        (json.counts?.revrec || 0)
+
+      if (totalCount === previousCount && totalCount > 0) {
+        stablePolls++
+        if (stablePolls >= 2) {
+          clearInterval(poll)
+          setIsSyncing(false)
+          setSyncStatus('complete')
+          setTimeout(() => setSyncStatus('idle'), 3000)
+        }
+      } else {
+        stablePolls = 0
+      }
+      previousCount = totalCount
+    }, 3000)
   }, [])
 
   const handleReset = useCallback(async () => {
@@ -206,11 +259,42 @@ export default function Dashboard() {
             </p>
           </div>
           <ActionButtons
-            onLoad={loadData}
+            onSyncStart={handleSyncStart}
+            onRefresh={loadData}
             onReset={() => setShowResetModal(true)}
-            loading={loading}
+            isSyncing={isSyncing}
           />
         </div>
+
+        {/* Sync Status Banner */}
+        {syncStatus !== 'idle' && (
+          <div className={`mt-4 flex items-center gap-3 px-4 py-3 rounded-lg text-sm border ${
+            syncStatus === 'syncing' ? 'bg-indigo-50 border-indigo-100 text-indigo-700' :
+            syncStatus === 'complete' ? 'bg-green-50 border-green-100 text-green-700' :
+            'bg-yellow-50 border-yellow-100 text-yellow-700'
+          }`}>
+            {syncStatus === 'syncing' && (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin text-indigo-500" />
+                <span className="font-medium animate-pulse">Syncing... waiting for data</span>
+                <span className="text-indigo-500/80 mx-2">|</span>
+                <span>{counts.customers} customers · {counts.contracts} contracts · {counts.invoices} invoices · {counts.vendors} vendors · {counts.revrec} obligations</span>
+              </>
+            )}
+            {syncStatus === 'complete' && (
+              <div className="animate-in fade-in slide-in-from-top-1 flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-green-500" />
+                <span className="font-medium">Sync complete — {counts.customers + counts.contracts + counts.invoices + counts.vendors + counts.revrec} total records</span>
+              </div>
+            )}
+            {syncStatus === 'timeout' && (
+              <div className="animate-in fade-in slide-in-from-top-1 flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 text-yellow-600" />
+                <span className="font-medium">Sync may still be running. Click refresh to check.</span>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Tabs */}

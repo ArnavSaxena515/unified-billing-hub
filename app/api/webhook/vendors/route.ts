@@ -51,12 +51,13 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: true, received: 0, note: 'Empty payload ignored' })
     }
 
-    await Promise.all(
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      filtered.map((record: any) =>
-        redis.rpush('billing:vendors', JSON.stringify(record))
-      )
-    )
+    const hashData: Record<string, string> = {}
+    filtered.forEach((record: any) => {
+      const key = `${record["Source"] || "unknown"}:${record["Source ID"] || record["Vendor ID"] || ""}`
+      hashData[key] = JSON.stringify(record)
+    })
+
+    await redis.hset('billing:vendors', hashData)
     await redis.expire('billing:vendors', 3600)
 
     return NextResponse.json({ success: true, received: filtered.length })
