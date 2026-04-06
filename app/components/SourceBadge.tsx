@@ -8,6 +8,7 @@ const badgeStyles: Record<string, string> = {
   Zuora: 'bg-primary/10 text-primary',
   Chargebee: 'bg-secondary/10 text-secondary',
   NetSuite: 'bg-tertiary/10 text-tertiary',
+  Stripe: 'bg-[#F5F3FF] text-[#7C3AED] border-[#C4B5FD] border',
 }
 
 export default function SourceBadge({ source }: SourceBadgeProps) {

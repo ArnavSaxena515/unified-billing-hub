@@ -1,6 +1,6 @@
 'use client'
 
-import { Users, FileText, Receipt, Store } from 'lucide-react'
+import { Users, FileText, Receipt, Store, Sparkles } from 'lucide-react'
 import type { TabKey } from '@/app/lib/types'
 
 interface DataTabsProps {
@@ -14,6 +14,7 @@ const tabs: { key: TabKey; label: string; icon: typeof Users }[] = [
   { key: 'contracts', label: 'Contracts', icon: FileText },
   { key: 'invoices', label: 'Invoices', icon: Receipt },
   { key: 'vendors', label: 'Vendors', icon: Store },
+  { key: 'revrec', label: 'Revenue Recognition', icon: Sparkles },
 ]
 
 export default function DataTabs({ activeTab, onChange, counts }: DataTabsProps) {

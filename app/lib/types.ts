@@ -47,8 +47,35 @@ export interface Vendor {
   Currency: string
 }
 
-export type TabKey = 'customers' | 'contracts' | 'invoices' | 'vendors'
-export type SourceFilter = 'All' | 'Zuora' | 'Chargebee' | 'NetSuite'
+export interface RevRec {
+  Source: string
+  'Contract ID': string
+  Customer: string
+  'Performance Obligation': string
+  'Obligation Type': string
+  'Total Value': number
+  Currency: string
+  'Term Start': string
+  'Term End': string
+  'Term Months': number
+  'Monthly Recognition': number
+  'Months Elapsed': number
+  'Recognized To Date': number
+  'Deferred Revenue': number
+  'Recognition Pct': number
+  'Invoice ID': string
+  'Invoice Number': string
+  'Invoice Status': string
+  'Amount Billed': number
+  'Amount Paid': number
+  'Amount Outstanding': number
+  'Standalone Selling Price': number
+  'Allocation Pct': number
+  Collectability: string
+}
+
+export type TabKey = 'customers' | 'contracts' | 'invoices' | 'vendors' | 'revrec'
+export type SourceFilter = 'All' | 'Zuora' | 'Chargebee' | 'NetSuite' | 'Stripe'
 export type SortDirection = 'asc' | 'desc' | null
 
 export interface SortState {
@@ -61,10 +88,12 @@ export interface BillingData {
   contracts: Contract[]
   invoices: Invoice[]
   vendors: Vendor[]
+  revrec: RevRec[]
   counts: {
     customers: number
     contracts: number
     invoices: number
     vendors: number
+    revrec: number
   }
 }

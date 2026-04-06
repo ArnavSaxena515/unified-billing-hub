@@ -1,12 +1,13 @@
 'use client'
 
-import { Users, FileText, Receipt, Store } from 'lucide-react'
+import { Users, FileText, Receipt, Store, TrendingUp } from 'lucide-react'
 
 interface StatsRowProps {
   customers: number
   contracts: number
   invoices: number
   vendors: number
+  revrec: number
 }
 
 const stats = [
@@ -14,13 +15,14 @@ const stats = [
   { key: 'contracts', label: 'Contracts', icon: FileText, color: 'text-secondary' },
   { key: 'invoices', label: 'Invoices', icon: Receipt, color: 'text-tertiary' },
   { key: 'vendors', label: 'Vendors', icon: Store, color: 'text-primary-dark' },
+  { key: 'revrec', label: 'Rev Rec Schedules', icon: TrendingUp, color: 'text-[#7C3AED]' },
 ] as const
 
-export default function StatsRow({ customers, contracts, invoices, vendors }: StatsRowProps) {
-  const counts = { customers, contracts, invoices, vendors }
+export default function StatsRow({ customers, contracts, invoices, vendors, revrec }: StatsRowProps) {
+  const counts = { customers, contracts, invoices, vendors, revrec }
 
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 px-8 -mt-6 relative z-10">
+    <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 px-8 -mt-6 relative z-10">
       {stats.map(({ key, label, icon: Icon, color }) => (
         <div
           key={key}

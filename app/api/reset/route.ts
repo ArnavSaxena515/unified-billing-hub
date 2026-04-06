@@ -8,6 +8,7 @@ export async function POST() {
       redis.del('billing:contracts'),
       redis.del('billing:invoices'),
       redis.del('billing:vendors'),
+      redis.del('billing:revrec'),
     ])
     return NextResponse.json({ success: true })
   } catch {

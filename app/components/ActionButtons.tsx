@@ -13,6 +13,7 @@ export default function ActionButtons({ onLoad, onReset, loading }: ActionButton
   const [syncingZuora, setSyncingZuora] = useState(false)
   const [syncingChargebee, setSyncingChargebee] = useState(false)
   const [syncingNetSuite, setSyncingNetSuite] = useState(false)
+  const [syncingStripe, setSyncingStripe] = useState(false)
   const [toastMessage, setToastMessage] = useState<{ text: string; error: boolean } | null>(null)
 
   const showToast = (text: string, error = false) => {
@@ -59,7 +60,20 @@ export default function ActionButtons({ onLoad, onReset, loading }: ActionButton
     }
   }
 
-  const isSyncing = syncingZuora || syncingChargebee || syncingNetSuite
+  const handleSyncStripe = async () => {
+    setSyncingStripe(true)
+    try {
+      const res = await fetch('/api/sync/stripe', { method: 'POST' })
+      if (!res.ok) throw new Error('Failed')
+      showToast('Stripe sync triggered. Data will arrive shortly.', false)
+    } catch {
+      showToast('Failed to trigger Stripe sync', true)
+    } finally {
+      setSyncingStripe(false)
+    }
+  }
+
+  const isSyncing = syncingZuora || syncingChargebee || syncingNetSuite || syncingStripe
 
   return (
     <div className="flex flex-wrap items-center gap-3 relative">
@@ -119,6 +133,21 @@ export default function ActionButtons({ onLoad, onReset, loading }: ActionButton
           <RefreshCw className="w-4 h-4" />
         )}
         {syncingNetSuite ? 'Syncing NetSuite...' : 'Sync NetSuite'}
+      </button>
+
+      {/* Sync Stripe Button */}
+      <button
+        onClick={handleSyncStripe}
+        disabled={isSyncing}
+        className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold text-white
+          bg-[#7C3AED] hover:bg-[#6D28D9] active:scale-[0.98] disabled:opacity-50 transition-all shadow-[0_4px_20px_-4px_rgba(124,58,237,0.4)]"
+      >
+        {syncingStripe ? (
+          <Loader2 className="w-4 h-4 animate-spin" />
+        ) : (
+          <RefreshCw className="w-4 h-4" />
+        )}
+        {syncingStripe ? 'Syncing Stripe...' : 'Sync Stripe'}
       </button>
 
       {/* Load Data Button */}

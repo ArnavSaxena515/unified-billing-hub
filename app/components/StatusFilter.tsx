@@ -14,6 +14,7 @@ const statusOptions: Record<TabKey, string[]> = {
   contracts: ['All', 'Active', 'Expired', 'Cancelled'],
   invoices: ['All', 'Paid', 'Posted', 'Draft', 'Cancelled'],
   vendors: ['All', 'Active', 'Inactive'],
+  revrec: ['All'],
 }
 
 export default function StatusFilter({ value, onChange, activeTab }: StatusFilterProps) {

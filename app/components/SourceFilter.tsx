@@ -7,12 +7,13 @@ interface SourceFilterProps {
   onChange: (v: SourceFilterType) => void
 }
 
-const sources: SourceFilterType[] = ['All', 'Zuora', 'Chargebee', 'NetSuite']
+const sources: SourceFilterType[] = ['All', 'Zuora', 'Chargebee', 'NetSuite', 'Stripe']
 
 const sourceColors: Record<string, string> = {
   Zuora: 'bg-primary/10 text-primary border-primary/20',
   Chargebee: 'bg-secondary/10 text-secondary border-secondary/20',
   NetSuite: 'bg-tertiary/10 text-tertiary border-tertiary/20',
+  Stripe: 'bg-[#F5F3FF] text-[#7C3AED] border border-[#C4B5FD]',
 }
 
 export default function SourceFilter({ value, onChange }: SourceFilterProps) {

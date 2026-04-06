@@ -13,6 +13,7 @@ import EmptyState from './components/EmptyState'
 import LoadingState from './components/LoadingState'
 import ResetModal from './components/ResetModal'
 import Footer from './components/Footer'
+import RevRecSummary from './components/RevRecSummary'
 import type {
   Customer,
   Contract,
@@ -22,6 +23,7 @@ import type {
   SourceFilter as SourceFilterType,
   SortState,
   BillingData,
+  RevRec,
 } from './lib/types'
 
 export default function Dashboard() {
@@ -29,6 +31,7 @@ export default function Dashboard() {
   const [contracts, setContracts] = useState<Contract[]>([])
   const [invoices, setInvoices] = useState<Invoice[]>([])
   const [vendors, setVendors] = useState<Vendor[]>([])
+  const [revrec, setRevrec] = useState<RevRec[]>([])
   const [loading, setLoading] = useState(false)
   const [activeTab, setActiveTab] = useState<TabKey>('customers')
   const [sourceFilter, setSourceFilter] = useState<SourceFilterType>('All')
@@ -66,6 +69,7 @@ export default function Dashboard() {
       setContracts(data.contracts || [])
       setInvoices(data.invoices || [])
       setVendors(data.vendors || [])
+      setRevrec(data.revrec || [])
     } catch (err) {
       console.error('Failed to load data:', err)
     } finally {
@@ -80,6 +84,7 @@ export default function Dashboard() {
       setContracts([])
       setInvoices([])
       setVendors([])
+      setRevrec([])
       setShowResetModal(false)
     } catch (err) {
       console.error('Failed to reset:', err)
@@ -99,14 +104,16 @@ export default function Dashboard() {
 
   // Get current tab data
   const rawData = useMemo(() => {
-    const map: Record<TabKey, (Customer | Contract | Invoice | Vendor)[]> = {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const map: Record<TabKey, any[]> = {
       customers,
       contracts,
       invoices,
       vendors,
+      revrec,
     }
     return map[activeTab]
-  }, [activeTab, customers, contracts, invoices, vendors])
+  }, [activeTab, customers, contracts, invoices, vendors, revrec])
 
   // Apply all 3 filters (AND logic)
   const filteredData = useMemo(() => {
@@ -170,8 +177,9 @@ export default function Dashboard() {
       contracts: contracts.length,
       invoices: invoices.length,
       vendors: vendors.length,
+      revrec: revrec.length,
     }),
-    [customers, contracts, invoices, vendors],
+    [customers, contracts, invoices, vendors, revrec],
   )
 
   return (
@@ -183,6 +191,7 @@ export default function Dashboard() {
         contracts={counts.contracts}
         invoices={counts.invoices}
         vendors={counts.vendors}
+        revrec={counts.revrec}
       />
 
       {/* Title area */}
@@ -232,6 +241,7 @@ export default function Dashboard() {
             <EmptyState tab={activeTab} />
           ) : (
             <>
+              {activeTab === 'revrec' && <RevRecSummary data={sortedData as RevRec[]} />}
               <DataTable
                 tab={activeTab}
                 data={sortedData}
